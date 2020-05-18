@@ -33,15 +33,19 @@ def score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=2):
 
 #Assume CONV-Batchnorm-CONV-Batchnorm-POOL-Dropout-FC-Softmax
 def create_model(model_params):
-    conv_size1,conv_size2=int(model_params['conv_size1']),int(model_params['conv_size2']) #Only depth, assumes stride one, size 5 and same padding
+    conv_size1,conv_size2,conv_size3=int(model_params['conv_size1']),int(model_params['conv_size2']),int(model_params['conv_size3']) #Only depth, assumes stride one, size 5 and same padding
     fc_size=int(model_params['fc_size'])
     dropout_param=model_params['dropout_param']
     reg=tf.keras.regularizers.l2(model_params['l2_reg'])
     model=tf.keras.Sequential()
-    model.add(Conv2D(conv_size1,3,padding='same',kernel_regularizer=reg,input_shape=(32,32,3)))
+    model.add(Conv2D(conv_size1,5,padding='same',kernel_regularizer=reg,input_shape=(32,32,3)))
     model.add(BatchNormalization())
     model.add(ReLU())
-    model.add(Conv2D(conv_size2,3,padding='same',kernel_regularizer=reg))
+    model.add(Conv2D(conv_size2,5,padding='same',kernel_regularizer=reg))
+    model.add(BatchNormalization())
+    model.add(ReLU())
+    model.add(MaxPooling2D())
+    model.add(Conv2D(conv_size3,3,padding='same',kernel_regularizer=reg))
     model.add(BatchNormalization())
     model.add(ReLU())
     model.add(MaxPooling2D())
