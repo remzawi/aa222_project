@@ -4,8 +4,8 @@ from tensorflow.keras.layers import Conv2D, BatchNormalization, Dropout, Dense, 
 import numpy as np
 
 def load_cifar(num_training=49000,num_val=1000,normalize=True): #Load data from saved numpy array
-    X_train=np.asarray(np.load('X_train_cifar10.npy'),dtype=np.float32)
-    X_test=np.asarray(np.load('X_test_cifar10.npy'),dtype=np.float32)
+    X_train=np.asarray(np.load('X_train_cifar10.npy'),dtype=np.float32)/255
+    X_test=np.asarray(np.load('X_test_cifar10.npy'),dtype=np.float32)/255
     y_train=np.asarray(np.load('y_train_cifar10.npy'),dtype=np.int32).flatten()
     y_test=np.asarray(np.load('y_test_cifar10.npy'),dtype=np.int32).flatten()
     X_train,X_val=X_train[:num_training],X_train[num_training:num_training+num_val]
@@ -38,10 +38,10 @@ def create_model(model_params):
     dropout_param=model_params['dropout_param']
     reg=tf.keras.regularizers.l2(model_params['l2_reg'])
     model=tf.keras.Sequential()
-    model.add(Conv2D(conv_size1,5,padding='same',kernel_regularizer=reg,input_shape=(32,32,3)))
+    model.add(Conv2D(conv_size1,3,padding='same',kernel_regularizer=reg,input_shape=(32,32,3)))
     model.add(BatchNormalization())
     model.add(ReLU())
-    model.add(Conv2D(conv_size2,5,padding='same',kernel_regularizer=reg))
+    model.add(Conv2D(conv_size2,3,padding='same',kernel_regularizer=reg))
     model.add(BatchNormalization())
     model.add(ReLU())
     model.add(MaxPooling2D())
