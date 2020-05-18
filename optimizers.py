@@ -64,3 +64,8 @@ def randomSearch(n,params=params,num_training=49000,num_val=1000):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
     samples=createRandomSamplingPlan(n,bounds)
     return randomSearchFromSamples(samples,paramstooptimize,model_params,num_training,num_val)
+
+
+test=np.array([1,2,3])
+print(test)
+np.save('test.npy',test)
