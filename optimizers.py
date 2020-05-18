@@ -2,17 +2,18 @@
 import numpy as np 
 import numpy.random as rd 
 from kerasmodel import *
+from tqdm import tqdm
 
 
 #Contains parameters to optimize, associated with a bound (if the bounds are the same value, no optimization is done) and a flag for value types (0 normal, 1 int, 2 log)
 params={'learning_rate':(1e-4,1e-1,2),
         'batch_size':(32,256,1),
-        'nepochs':(10,10,1),
+        'nepochs':(8,8,1),
         'conv_size1':(32,128,1),
         'conv_size2':(32,128,1),
         'conv_size3':(32,128,1),
         'fc_size':(50,200,1),
-        'dropout_param':(0,1,0),
+        'dropout_param':(0,0.8,0),
         'l2_reg':(1e-10,1,2)}
 
 def getParamsToOptimize(params=params):
@@ -48,16 +49,27 @@ def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=4
     best_params=None
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
     n,m=samples.shape
-    for i in range(n):
-        print("Starting training on sample "+str(i+1))
-        for j in range(m):
-            model_params[paramstooptimize[j]]=samples[i,j]
-        model=create_model(model_params)
-        score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
-        if score>best_score:
-            best_model=model
-            best_params=model_params.copy()
-            best_score=score
+    if keras_verbose>0:
+        for i in range(n):
+            print("Starting training on sample "+str(i+1))
+            for j in range(m):
+                model_params[paramstooptimize[j]]=samples[i,j]
+            model=create_model(model_params)
+            score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
+            if score>best_score:
+                best_model=model
+                best_params=model_params.copy()
+                best_score=score
+    else:
+        for i in tqdm(range(n)):
+            for j in range(m):
+                model_params[paramstooptimize[j]]=samples[i,j]
+            model=create_model(model_params)
+            score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
+            if score>best_score:
+                best_model=model
+                best_params=model_params.copy()
+                best_score=score
     return best_model,best_params,best_score
 
 def randomSearch(n,test_sampling=False,params=params,num_training=49000,num_val=1000,keras_verbose=2):
@@ -95,24 +107,45 @@ def createPopulation(n,bounds,w=1,c1=1,c2=1):
         population.append(particle)
     return population
 
-def PS_optimization(f,population,k_max,w=1,c1=1,c2=1):
+def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True):
     x_best,y_best=population[0].x_best.copy(),np.inf
-    for p in population:
-        y=f(p.x)
-        p.y_best=y
-        if y>y_best:
-            x_best,y_best=p.x.copy(),y
-    for k in range(k_max):
+    if progress:
+        print("Initila evaluation on population")
         for p in population:
-            p.update(x_best)
             y=f(p.x)
-            if y>p.y_best:
-                p.x_best=p.x 
-                p.y_best=y
+            p.y_best=y
             if y>y_best:
-                x_best=p.x 
-                y_best=y
-    return population,x_best,y_best
+                x_best,y_best=p.x.copy(),y
+        print("Starting optimization loop")
+        for k in tqdm(range(k_max)):
+            for p in population:
+                p.update(x_best)
+                y=f(p.x)
+                if y>p.y_best:
+                    p.x_best=p.x 
+                    p.y_best=y
+                if y>y_best:
+                    x_best=p.x 
+                    y_best=y
+        return population,x_best,y_best
+    else:
+        for p in population:
+            y=f(p.x)
+            p.y_best=y
+            if y>y_best:
+                x_best,y_best=p.x.copy(),y
+
+        for k in range(k_max):
+            for p in population:
+                p.update(x_best)
+                y=f(p.x)
+                if y>p.y_best:
+                    p.x_best=p.x 
+                    p.y_best=y
+                if y>y_best:
+                    x_best=p.x 
+                    y_best=y
+        return population,x_best,y_best
 
 def particle_swarm(n,k_max,params=params,w=1,c1=1,c2=1,num_training=49000,num_val=1000,keras_verbose=2):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
@@ -124,7 +157,7 @@ def particle_swarm(n,k_max,params=params,w=1,c1=1,c2=1,num_training=49000,num_va
         model=create_model(model_params)
         score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
         return score
-    population,x_best,y_best=PS_optimization(f,population,k_max,w=w,c1=c1,c2=c2)
+    population,x_best,y_best=PS_optimization(f,population,k_max,w=w,c1=c1,c2=c2,progress=keras_verbose==0)
     for j in range(len(x_best)):
         model_params[paramstooptimize[j]]=x_best[j]
     return model_params,y_best
