@@ -68,4 +68,4 @@ def randomSearch(n,params=params,num_training=49000,num_val=1000):
 
 test=np.array([1,2,3])
 print(test)
-np.save('test.npy',test)
+np.save('test2.npy',test)
