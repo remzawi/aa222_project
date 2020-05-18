@@ -41,7 +41,7 @@ def createRandomSamplingPlan(n,bounds): #Create n points in len(bounds) dim that
             samples[i]=np.exp(rd.uniform(np.log(bounds[i][0]),np.log(bounds[i][1]),n))
     return samples.T
 
-def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=49000,num_val=1000):
+def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=49000,num_val=1000,keras_verbose=2):
     best_model=None
     best_score=0
     best_params=None
@@ -52,19 +52,19 @@ def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=4
         for j in range(m):
             model_params[paramstooptimize[j]]=samples[i,j]
         model=create_model(model_params)
-        score=score_model(model,model_params,X_train,y_train,X_val,y_val)
+        score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
         if score>best_score:
             best_model=model
             best_params=model_params.copy()
             best_score=score
     return best_model,best_params,best_score
 
-def randomSearch(n,test_sampling=False,params=params,num_training=49000,num_val=1000):
+def randomSearch(n,test_sampling=False,params=params,num_training=49000,num_val=1000,keras_verbose=2):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
     samples=createRandomSamplingPlan(n,bounds)
     if test_sampling:
         return samples
-    return randomSearchFromSamples(samples,paramstooptimize,model_params,num_training,num_val)
+    return randomSearchFromSamples(samples,paramstooptimize,model_params,num_training,num_val,keras_verbose=keras_verbose)
 
 
 
