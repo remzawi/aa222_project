@@ -66,7 +66,6 @@ def randomSearch(n,test_sampling=False,params=params,num_training=49000,num_val=
         return samples
     return randomSearchFromSamples(samples,paramstooptimize,model_params,num_training,num_val)
 
-model =randomSearch(1)
 
 
 
