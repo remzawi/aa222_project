@@ -22,29 +22,26 @@ def load_cifar(num_training=49000,num_val=1000,normalize=True): #Load data from 
 
 def score_model(model,model_params,X_train,y_train,X_val,y_val): #Black box function that scores a model by returning its final validation accuracy
     lr=model_params['learning_rate']
-    nepochs=model_params['nepochs']
-    batch_size=['batch_size']
+    nepochs=int(model_params['nepochs'])
+    batch_size=int(model_params['batch_size'])
     model.compile(optimizer=tf.keras.optimizers.Adam(lr),
               loss='sparse_categorical_crossentropy',
               metrics=[tf.keras.metrics.sparse_categorical_accuracy])
-    history=model.train(X_train,y_train,batch_size=batch_size,epochs=nepochs,validation_data=(X_val,y_val),verbose=False)
+    history=model.fit(X_train,y_train,batch_size=batch_size,epochs=nepochs,validation_data=(X_val,y_val))
     score=history.history['val_sparse_categorical_accuracy'][-1]
     return score
 
-#Assume CONV-Batchnorm-CONV-Batchnorm-CONV-Batchnorm-POOL-Dropout-FC-Softmax
+#Assume CONV-Batchnorm-CONV-Batchnorm-POOL-Dropout-FC-Softmax
 def create_model(model_params):
-    conv_size1,conv_size2,conv_size3=model_params['conv_size1'],model_params['conv_size2'],model_params['conv_size3'] #Only depth, assumes stride one, size 5 and same padding
-    fc_size=model_params['fc_size']
+    conv_size1,conv_size2=int(model_params['conv_size1']),int(model_params['conv_size2']) #Only depth, assumes stride one, size 5 and same padding
+    fc_size=int(model_params['fc_size'])
     dropout_param=model_params['dropout_param']
-    reg=tf.keras.regularizers.l2(l=model_params['l2_reg'])
+    reg=tf.keras.regularizers.l2(model_params['l2_reg'])
     model=tf.keras.Sequential()
-    model.add(Conv2D(conv_size1,3,padding='same',kernel_regularizer=reg))
+    model.add(Conv2D(conv_size1,3,padding='same',kernel_regularizer=reg,input_shape=(32,32,3)))
     model.add(BatchNormalization())
     model.add(ReLU())
     model.add(Conv2D(conv_size2,3,padding='same',kernel_regularizer=reg))
-    model.add(BatchNormalization())
-    model.add(ReLU())
-    model.add(Conv2D(conv_size3,3,padding='same',kernel_regularizer=reg))
     model.add(BatchNormalization())
     model.add(ReLU())
     model.add(MaxPooling2D())

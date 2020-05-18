@@ -2,26 +2,24 @@
 import numpy as np 
 import numpy.random as rd 
 from kerasmodel import *
-from tqdm import tqdm
-from scipy.stats import loguniform
+
 
 #Contains parameters to optimize, associated with a bound (if the bounds are the same value, no optimization is done) and a flag for value types (0 normal, 1 int, 2 log)
-params={'learning_rate':(1e-5,1e-1,2),
+params={'learning_rate':(1e-6,1e-1,2),
         'batch_size':(16,256,1),
-        'nepochs':(10,10,1),
-        'conv_size1':(32,32,1),
+        'nepochs':(5,5,1),
+        'conv_size1':(64,64,1),
         'conv_size2':(64,64,1),
-        'conv_size3':(128,128,1),
         'fc_size':(50,200,1),
         'dropout_param':(0,1,0),
-        'l2_reg':(0,1e-2,2)}
+        'l2_reg':(1e-10,1,2)}
 
 def getParamsToOptimize(params=params):
     paramstooptimize=[]
     bounds=[]
     model_params={}
     for param,bound in params.items():
-        if bounds[0]!=bounds[1]:
+        if bound[0]!=bound[1]:
             paramstooptimize.append(param)
             bounds.append(bound)
         else:
@@ -40,7 +38,7 @@ def createRandomSamplingPlan(n,bounds): #Create n points in len(bounds) dim that
         elif bounds[i][2]==0:
             samples[i]=rd.uniform(bounds[i][0],bounds[i][1],n)
         else:
-            samples[i]=loguniform(bounds[i][0],bounds[i][1],n)
+            samples[i]=np.exp(rd.uniform(np.log(bounds[i][0]),np.log(bounds[i][1]),n))
     return samples.T
 
 def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=49000,num_val=1000):
@@ -49,7 +47,8 @@ def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=4
     best_params=None
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
     n,m=samples.shape
-    for i in tqdm(range(n)):
+    for i in range(n):
+        print("Starting training on sample "+str(i+1))
         for j in range(m):
             model_params[paramstooptimize[j]]=samples[i,j]
         model=create_model(model_params)
@@ -60,12 +59,14 @@ def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=4
             best_score=score
     return best_model,best_params,best_score
 
-def randomSearch(n,params=params,num_training=49000,num_val=1000):
+def randomSearch(n,test_sampling=False,params=params,num_training=49000,num_val=1000):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
     samples=createRandomSamplingPlan(n,bounds)
+    if test_sampling:
+        return samples
     return randomSearchFromSamples(samples,paramstooptimize,model_params,num_training,num_val)
 
+model =randomSearch(1)
 
-test=np.array([1,2,3])
-print(test)
-np.save('test2.npy',test)
+
+
