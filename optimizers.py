@@ -80,35 +80,36 @@ def randomSearch(n,test_sampling=False,params=params,num_training=49000,num_val=
     return randomSearchFromSamples(samples,paramstooptimize,model_params,num_training,num_val,keras_verbose=keras_verbose)
 
 class Particle():
-    def __init__(self,x,intlist,w,c1,c2):
+    def __init__(self,x,bounds,w,c1,c2):
         self.x=x
         self.n=len(x)
         self.x_best=x
         self.y_best=np.inf
         self.v=np.zeros(len(x))
-        self.intlist=intlist
+        self.bounds=bounds
         self.w=w
         self.c1=c1 
         self.c2=c2
     def update(self,x_best):
         r1,r2=rd.rand(self.n),rd.rand(self.n)
         self.x+=self.v
-        self.v=self.w*self.v+self.c1*r1*(self.x_best-self.x)+self.c2*r2*(x_best-self.x)
         for i in range(self.n):
-            if self.intlist[i]:
-                self.x[i]=int(self.x[i])
+            self.x[i]=min(self.x[i],self.bounds[i][1])
+            self.x[i]=max(self.x[i],self.bounds[i][0])
+            if self.bounds[i][2]==1:
+                self.x[i]=int(self.x[i])     
+        self.v=self.w*self.v+self.c1*r1*(self.x_best-self.x)+self.c2*r2*(x_best-self.x)
     
 def createPopulation(n,bounds,w=1,c1=1,c2=1):
     samples=createRandomSamplingPlan(n,bounds)
     population=[]
-    intlist=[bounds[i][2]==1 for i in range(len(bounds))]
     for i in range(n):
-        particle=Particle(samples[i],intlist,w,c1,c2)
+        particle=Particle(samples[i],bounds,w,c1,c2)
         population.append(particle)
     return population
 
 def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True):
-    x_best,y_best=population[0].x_best.copy(),np.inf
+    x_best,y_best=population[0].x_best.copy(),0
     if progress:
         print("Initila evaluation on population")
         for p in population:
