@@ -3,6 +3,7 @@ import numpy as np
 import numpy.random as rd 
 from kerasmodel import *
 from tqdm import tqdm
+import gc
 
 
 #Contains parameters to optimize, associated with a bound (if the bounds are the same value, no optimization is done) and a flag for value types (0 normal, 1 int, 2 log)
@@ -109,14 +110,14 @@ def createPopulation(n,bounds,w=1,c1=1,c2=1):
     return population
 
 def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True):
-    x_best,y_best=population[0].x_best.copy(),0
+    x_best,y_best=population[0].x_best,0
     if progress:
         print("Initila evaluation on population")
         for p in population:
             y=f(p.x)
             p.y_best=y
             if y>y_best:
-                x_best,y_best=p.x.copy(),y
+                x_best,y_best=p.x,y
         print("Starting optimization loop")
         for k in tqdm(range(k_max)):
             for p in population:
@@ -134,9 +135,10 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True):
             y=f(p.x)
             p.y_best=y
             if y>y_best:
-                x_best,y_best=p.x.copy(),y
+                x_best,y_best=p.x,y
 
         for k in range(k_max):
+            gc.collect()
             for p in population:
                 p.update(x_best)
                 y=f(p.x)
@@ -157,6 +159,7 @@ def particle_swarm(n,k_max,params=params,w=1,c1=1,c2=1,num_training=49000,num_va
             model_params[paramstooptimize[j]]=x[j]
         model=create_model(model_params)
         score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
+        del model
         return score
     population,x_best,y_best=PS_optimization(f,population,k_max,w=w,c1=c1,c2=c2,progress=keras_verbose==0)
     for j in range(len(x_best)):
