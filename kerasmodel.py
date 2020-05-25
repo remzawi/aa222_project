@@ -31,7 +31,7 @@ def score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=2):
     score=history.history['val_sparse_categorical_accuracy'][-1]
     return score
 
-#Assume CONV-Batchnorm-CONV-Batchnorm-POOL-Dropout-FC-Softmax
+#Assume CONV-Batchnorm-Relu-CONV-Batchnorm-Relu-CONV-Batchnorm-Relu-POOL-Dropout-FC-Softmax
 def create_model(model_params):
     conv_size1,conv_size2,conv_size3=int(model_params['conv_size1']),int(model_params['conv_size2']),int(model_params['conv_size3']) #Only depth, assumes stride one, size 5 and same padding
     fc_size=int(model_params['fc_size'])
