@@ -2,6 +2,7 @@
 import tensorflow as tf 
 from tensorflow.keras.layers import Conv2D, BatchNormalization, Dropout, Dense, MaxPooling2D, ReLU, Flatten
 import numpy as np
+import gc
 
 def load_cifar(num_training=49000,num_val=1000,normalize=True): #Load data from saved numpy array
     X_train=np.asarray(np.load('X_train_cifar10.npy'),dtype=np.float32)/255
@@ -29,6 +30,7 @@ def score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=2):
               metrics=[tf.keras.metrics.sparse_categorical_accuracy])
     history=model.fit(X_train,y_train,batch_size=batch_size,epochs=nepochs,validation_data=(X_val,y_val),verbose=keras_verbose)
     score=history.history['val_sparse_categorical_accuracy'][-1]
+    gc.collect()
     return score
 
 #Assume CONV-Batchnorm-Relu-CONV-Batchnorm-Relu-CONV-Batchnorm-Relu-POOL-Dropout-FC-Softmax
