@@ -178,7 +178,7 @@ def particle_swarm(n,k_max,params=params,w=1.1,c1=1.5,c2=1.5,num_training=49000,
     def f(x):
         for j in range(len(x)):
             model_params[paramstooptimize[j]]=x[j]
-        return score_modelv2(model_params,X_train,y_train,X_val,y_val)
+        return score_modelv2(model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
     population,x_best,y_best,history_x,history_y=PS_optimization(f,population,k_max,w=w,c1=c1,c2=c2,progress=keras_verbose==0,w_update=w_update)
     for j in range(len(x_best)):
         model_params[paramstooptimize[j]]=x_best[j]

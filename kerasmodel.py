@@ -61,7 +61,7 @@ def create_model(model_params):
     return model
 
 def score_modelv2(model_params,X_train,y_train,X_val,y_val,keras_verbose=2):
-    return score_model(create_model(model_params),,X_train,y_train,X_val,y_val,keras_verbose)
+    return score_model(create_model(model_params),model_params,X_train,y_train,X_val,y_val,keras_verbose)
 
 def evaluate_model(model):
     try:
