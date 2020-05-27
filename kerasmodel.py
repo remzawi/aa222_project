@@ -23,7 +23,7 @@ class ToyNet(tf.keras.Model):
         self.fc=Dense(fc_size,kernel_regularizer=reg)
         self.softmax=Dense(10,activation='softmax',kernel_regularizer=reg)
         self.bn1=BatchNormalization()
-        self.bn3=BatchNormalization()
+        self.bn2=BatchNormalization()
         self.bn3=BatchNormalization()
 
     

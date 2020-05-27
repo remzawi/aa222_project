@@ -169,7 +169,7 @@ def particle_swarm(n,k_max,params=params,w=1.2,c1=2,c2=2,num_training=49000,num_
     population=createPopulation(n,bounds)
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
     def f(x):
-        mp.=model_params.copy()
+        mp=model_params.copy()
         for j in range(len(x)):
             mp[paramstooptimize[j]]=x[j]
         return score_modelv3(mp,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
