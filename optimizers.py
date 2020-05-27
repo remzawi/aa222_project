@@ -45,7 +45,6 @@ def createRandomSamplingPlan(n,bounds): #Create n points in len(bounds) dim that
     return samples.T
 
 def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=49000,num_val=1000,keras_verbose=2):
-    best_model=None
     best_score=0
     best_params=None
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
@@ -55,20 +54,16 @@ def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=4
             print("Starting training on sample "+str(i+1))
             for j in range(m):
                 model_params[paramstooptimize[j]]=samples[i,j]
-            model=create_model(model_params)
-            score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
+            score=score_modelv3(model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
             if score>best_score:
-                best_model=model
                 best_params=model_params.copy()
                 best_score=score
     else:
         for i in tqdm(range(n)):
             for j in range(m):
                 model_params[paramstooptimize[j]]=samples[i,j]
-            model=create_model(model_params)
-            score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
+            score=score_modelv3(model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
             if score>best_score:
-                best_model=model
                 best_params=model_params.copy()
                 best_score=score
     return best_model,best_params,best_score
@@ -121,8 +116,8 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True,w_update=True
             y=f(p.x)
             p.y_best=y
             if y>y_best:
-                x_best,y_best=p.x,y
-                history_x.append(x_best)
+                x_best,y_best=p.x.copy(),y
+                history_x.append(x_best.copy())
                 history_y.append(y_best)
         print("Starting optimization loop")
         for k in tqdm(range(k_max)):
@@ -130,17 +125,16 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True,w_update=True
                 w_factor=0.8
             else:
                 w_factor=1
-            gc.collect()
             for p in population:
                 p.update(x_best,w_factor)
                 y=f(p.x)
                 if y>p.y_best:
-                    p.x_best=p.x 
+                    p.x_best=p.x.copy() 
                     p.y_best=y
                 if y>y_best:
-                    x_best=p.x 
+                    x_best=p.x.copy()
                     y_best=y
-                    history_x.append(x_best)
+                    history_x.append(x_best.copy())
                     history_y.append(y_best)
         return population,x_best,y_best,history_x,history_y
     else:
@@ -148,12 +142,11 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True,w_update=True
             y=f(p.x)
             p.y_best=y
             if y>y_best:
-                x_best,y_best=p.x,y
-                history_x.append(x_best)
+                x_best,y_best=p.x.copy(),y
+                history_x.append(x_best.copy())
                 history_y.append(y_best)
 
         for k in range(k_max):
-            gc.collect()
             if w_update and (k==k_max//2 or k_max==3*k_max//4):
                 w_factor=0.8
             else:
@@ -162,23 +155,24 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True,w_update=True
                 p.update(x_best,w_factor)
                 y=f(p.x)
                 if y>p.y_best:
-                    p.x_best=p.x 
+                    p.x_best=p.x.copy() 
                     p.y_best=y
                 if y>y_best:
-                    x_best=p.x 
+                    x_best=p.x.copy() 
                     y_best=y
-                    history_x.append(x_best)
+                    history_x.append(x_best.copy())
                     history_y.append(y_best)
         return population,x_best,y_best,history_x,history_y
 
-def particle_swarm(n,k_max,params=params,w=1.1,c1=1.5,c2=1.5,num_training=49000,num_val=1000,keras_verbose=2,w_update=True):
+def particle_swarm(n,k_max,params=params,w=1.2,c1=2,c2=2,num_training=49000,num_val=1000,keras_verbose=2,w_update=True):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
     population=createPopulation(n,bounds)
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
     def f(x):
+        mp.=model_params.copy()
         for j in range(len(x)):
-            model_params[paramstooptimize[j]]=x[j]
-        return score_modelv2(model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
+            mp[paramstooptimize[j]]=x[j]
+        return score_modelv3(mp,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
     population,x_best,y_best,history_x,history_y=PS_optimization(f,population,k_max,w=w,c1=c1,c2=c2,progress=keras_verbose==0,w_update=w_update)
     for j in range(len(x_best)):
         model_params[paramstooptimize[j]]=x_best[j]
