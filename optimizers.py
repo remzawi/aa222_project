@@ -7,7 +7,7 @@ import gc
 
 
 #Contains parameters to optimize, associated with a bound (if the bounds are the same value, no optimization is done) and a flag for value types (0 normal, 1 int, 2 log)
-params={'learning_rate':(1e-4,1e-1,2),
+params={'learning_rate':(1e-5,1e-1,2),
         'batch_size':(32,256,1),
         'nepochs':(8,8,1),
         'conv_size1':(32,128,1),
@@ -91,8 +91,9 @@ class Particle():
         self.w=w
         self.c1=c1 
         self.c2=c2
-    def update(self,x_best):
+    def update(self,x_best,w_factor=1):
         r1,r2=rd.rand(self.n),rd.rand(self.n)
+        self.w*=w_factor
         self.x+=self.v
         for i in range(self.n):
             self.x[i]=min(self.x[i],self.bounds[i][1])
@@ -109,19 +110,29 @@ def createPopulation(n,bounds,w=1,c1=1,c2=1):
         population.append(particle)
     return population
 
-def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True):
+def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True,w_update=True):
     x_best,y_best=population[0].x_best,0
+    history_x=[]
+    history_y=[]
+    w_factor=1
     if progress:
-        print("Initila evaluation on population")
+        print("Initial evaluation on population")
         for p in population:
             y=f(p.x)
             p.y_best=y
             if y>y_best:
                 x_best,y_best=p.x,y
+                history_x.append(x_best)
+                history_y.append(y_best)
         print("Starting optimization loop")
         for k in tqdm(range(k_max)):
+            if w_update and (k==k_max//2 or k_max==3*k_max//4):
+                w_factor=0.8
+            else:
+                w_factor=1
+            gc.collect()
             for p in population:
-                p.update(x_best)
+                p.update(x_best,w_factor)
                 y=f(p.x)
                 if y>p.y_best:
                     p.x_best=p.x 
@@ -129,18 +140,26 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True):
                 if y>y_best:
                     x_best=p.x 
                     y_best=y
-        return population,x_best,y_best
+                    history_x.append(x_best)
+                    history_y.append(y_best)
+        return population,x_best,y_best,history_x,history_y
     else:
         for p in population:
             y=f(p.x)
             p.y_best=y
             if y>y_best:
                 x_best,y_best=p.x,y
+                history_x.append(x_best)
+                history_y.append(y_best)
 
         for k in range(k_max):
             gc.collect()
+            if w_update and (k==k_max//2 or k_max==3*k_max//4):
+                w_factor=0.8
+            else:
+                w_factor=1
             for p in population:
-                p.update(x_best)
+                p.update(x_best,w_factor)
                 y=f(p.x)
                 if y>p.y_best:
                     p.x_best=p.x 
@@ -148,23 +167,22 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True):
                 if y>y_best:
                     x_best=p.x 
                     y_best=y
-        return population,x_best,y_best
+                    history_x.append(x_best)
+                    history_y.append(y_best)
+        return population,x_best,y_best,history_x,history_y
 
-def particle_swarm(n,k_max,params=params,w=1,c1=1,c2=1,num_training=49000,num_val=1000,keras_verbose=2):
+def particle_swarm(n,k_max,params=params,w=1.1,c1=1.5,c2=1.5,num_training=49000,num_val=1000,keras_verbose=2,w_update=True):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
     population=createPopulation(n,bounds)
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
     def f(x):
         for j in range(len(x)):
             model_params[paramstooptimize[j]]=x[j]
-        model=create_model(model_params)
-        score=score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
-        del model
-        return score
-    population,x_best,y_best=PS_optimization(f,population,k_max,w=w,c1=c1,c2=c2,progress=keras_verbose==0)
+        return score_modelv2(model_params,X_train,y_train,X_val,y_val)
+    population,x_best,y_best,history_x,history_y=PS_optimization(f,population,k_max,w=w,c1=c1,c2=c2,progress=keras_verbose==0,w_update=w_update)
     for j in range(len(x_best)):
         model_params[paramstooptimize[j]]=x_best[j]
-    return model_params,y_best
+    return model_params,y_best,history_x,history_y
     
 
 

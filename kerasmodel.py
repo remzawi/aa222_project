@@ -28,8 +28,10 @@ def score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=2):
     model.compile(optimizer=tf.keras.optimizers.Adam(lr),
               loss='sparse_categorical_crossentropy',
               metrics=[tf.keras.metrics.sparse_categorical_accuracy])
+    np.random.seed(0)
     history=model.fit(X_train,y_train,batch_size=batch_size,epochs=nepochs,validation_data=(X_val,y_val),verbose=keras_verbose)
     score=history.history['val_sparse_categorical_accuracy'][-1]
+    del model
     gc.collect()
     return score
 
@@ -57,6 +59,9 @@ def create_model(model_params):
     model.add(ReLU())
     model.add(Dense(10,activation='softmax',kernel_regularizer=reg))
     return model
+
+def score_modelv2(model_params,X_train,y_train,X_val,y_val,keras_verbose=2):
+    return score_model(create_model(model_params),,X_train,y_train,X_val,y_val,keras_verbose)
 
 def evaluate_model(model):
     try:
