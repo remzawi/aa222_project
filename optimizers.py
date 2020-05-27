@@ -66,7 +66,7 @@ def randomSearchFromSamples(samples,paramstooptimize,model_params,num_training=4
             if score>best_score:
                 best_params=model_params.copy()
                 best_score=score
-    return best_model,best_params,best_score
+    return best_params,best_score
 
 def randomSearch(n,test_sampling=False,params=params,num_training=49000,num_val=1000,keras_verbose=2):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
