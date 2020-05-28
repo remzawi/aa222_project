@@ -186,7 +186,7 @@ def crossover(x1,x2,a=0.15): #BLX alpha crossover
     low=np.minimum(x1,x2)
     up=np.maximum(x1,x2)
     low,up=low-a*(up-low),up+a*(up-low)
-    x=low+np.rand(len(x1))*(up-low)
+    x=low+rd.rand(len(x1))*(up-low)
     return x
 
 
@@ -203,7 +203,7 @@ def tournament_selection(population,y,k):
         sub_pop=population[mask]
         y_sp=y[mask]
         order=np.argsort(y_sp)
-        parents.append(sub_pop[order[-1]],sub_pop[order[-2]])
+        parents.append((sub_pop[order[-1]],sub_pop[order[-2]]))
     return parents
 
 def correct_population(population,bounds):
@@ -226,6 +226,7 @@ def genetic_algorithm(f,population,k_max,k_selection,bounds,selection=tournament
             parents=selection(population,y,k_selection)
             children=[crossover(parents[i][0],parents[i][1]) for i in range(n)]
             population=np.array([mutation(children[i]) for i in range(n)])
+            population=correct_population(population)
         print("Final evaluation")
         for i in range(n):
             y[i]=f(population[i])
@@ -246,6 +247,7 @@ def genetic_algorithm(f,population,k_max,k_selection,bounds,selection=tournament
             parents=selection(population,y,k_selection)
             children=[crossover(parents[i][0],parents[i][1]) for i in range(n)]
             population=np.array([mutation(children[i]) for i in range(n)])
+            population=correct_population(population)
         for i in range(n):
             y[i]=f(population[i])
         ind=np.argmax(y)
@@ -255,7 +257,7 @@ def genetic_algorithm(f,population,k_max,k_selection,bounds,selection=tournament
     
 
 
-def GP(n,k_max,k_selection,num_training=49000,num_val=1000,keras_verbose=2):
+def GP(n,k_max,k_selection,params=params,num_training=49000,num_val=1000,keras_verbose=2):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
     population=createRandomSamplingPlan(n,bounds)
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
