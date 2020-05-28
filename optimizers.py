@@ -90,12 +90,16 @@ class Particle():
         r1,r2=rd.rand(self.n),rd.rand(self.n)
         self.w*=w_factor
         self.x+=self.v
-        for i in range(self.n):
-            self.x[i]=min(self.x[i],self.bounds[i][1])
-            self.x[i]=max(self.x[i],self.bounds[i][0])
-            if self.bounds[i][2]==1:
-                self.x[i]=int(self.x[i])     
+        self.x=correct(self.x,self.bounds)    
         self.v=self.w*self.v+self.c1*r1*(self.x_best-self.x)+self.c2*r2*(x_best-self.x)
+
+def correct(x,bounds):
+    for i in range(len(x)):
+        x[i]=min(x[i],bounds[i][1])
+        x[i]=max(x[i],bounds[i][0])
+        if bounds[i][2]==1:
+            x[i]=int(x[i])
+    return x
     
 def createPopulation(n,bounds,w=1,c1=1,c2=1):
     samples=createRandomSamplingPlan(n,bounds)
@@ -121,7 +125,7 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True,w_update=True
                 history_y.append(y_best)
         print("Starting optimization loop")
         for k in tqdm(range(k_max)):
-            if w_update and (k==k_max//2 or k_max==3*k_max//4):
+            if w_update and (k==k_max//4 or k==k_max//2 or k_max==3*k_max//4):
                 w_factor=0.8
             else:
                 w_factor=1
@@ -147,7 +151,7 @@ def PS_optimization(f,population,k_max,w=1,c1=1,c2=1,progress=True,w_update=True
                 history_y.append(y_best)
 
         for k in range(k_max):
-            if w_update and (k==k_max//2 or k_max==3*k_max//4):
+            if w_update and (k==k_max//4 or k==k_max//2 or k_max==3*k_max//4):
                 w_factor=0.8
             else:
                 w_factor=1
@@ -178,6 +182,97 @@ def particle_swarm(n,k_max,params=params,w=1.2,c1=2,c2=2,num_training=49000,num_
         model_params[paramstooptimize[j]]=x_best[j]
     return model_params,y_best,history_x,history_y
     
+def crossover(x1,x2,a=0.15): #BLX alpha crossover
+    low=np.minimum(x1,x2)
+    up=np.maximum(x1,x2)
+    low,up=low-a*(up-low),up+a*(up-low)
+    x=low+np.rand(len(x1))*(up-low)
+    return x
+
+
+def mutation(x,scale=0.1,relative=True): #if normalize apply scale relative to value range
+    if relative:
+        return x*(1+rd.normal(scale=scale,size=len(x)))
+    return x+rd.normal(scale=scale,size=len(x))
+
+
+def tournament_selection(population,y,k):
+    parents=[]
+    for i in range(len(y)):
+        mask=rd.randint(0,len(y),k)
+        sub_pop=population[mask]
+        y_sp=y[mask]
+        order=np.argsort(y_sp)
+        parents.append(sub_pop[order[-1]],sub_pop[order[-2]])
+    return parents
+
+def correct_population(population,bounds):
+    for i in range(len(population)):
+        population[i]=correct(population[i],bounds)
+    return population
+
+def genetic_algorithm(f,population,k_max,k_selection,bounds,selection=tournament_selection,crossover=crossover,mutation=mutation,progress=True):
+    if progress:
+        n=len(population)
+        y=np.zeros(n)
+        x_history,y_history=[],[]
+        print("Starting optimization loop")
+        for k in tqdm(range(k_max)):
+            for i in range(n):
+                y[i]=f(population[i])
+            ind=np.argmax(y)
+            x_history.append(population[ind])
+            y_history.append(y[ind])
+            parents=selection(population,y,k_selection)
+            children=[crossover(parents[i][0],parents[i][1]) for i in range(n)]
+            population=np.array([mutation(children[i]) for i in range(n)])
+        print("Final evaluation")
+        for i in range(n):
+            y[i]=f(population[i])
+        ind=np.argmax(y)
+        x_history.append(population[ind])
+        y_history.append(y[ind])
+        return x_history,y_history
+    else:
+        n=len(population)
+        y=np.zeros(n)
+        x_history,y_history=[],[]
+        for k in range(k_max):
+            for i in range(n):
+                y[i]=f(population[i])
+            ind=np.argmax(y)
+            x_history.append(population[ind])
+            y_history.append(y[ind])
+            parents=selection(population,y,k_selection)
+            children=[crossover(parents[i][0],parents[i][1]) for i in range(n)]
+            population=np.array([mutation(children[i]) for i in range(n)])
+        for i in range(n):
+            y[i]=f(population[i])
+        ind=np.argmax(y)
+        x_history.append(population[ind])
+        y_history.append(y[ind])
+        return x_history,y_history
+    
+
+
+def GP(n,k_max,k_selection,num_training=49000,num_val=1000,keras_verbose=2):
+    paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
+    population=createRandomSamplingPlan(n,bounds)
+    X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
+    def f(x):
+        mp=model_params.copy()
+        for j in range(len(x)):
+            mp[paramstooptimize[j]]=x[j]
+        return score_modelv3(mp,X_train,y_train,X_val,y_val,keras_verbose=keras_verbose)
+    x_history,y_history=genetic_algorithm(f,population,k_max,k_selection,bounds,progress=keras_verbose==0)
+    x_best,y_best=x_history[-1],y_history[-1]
+    for j in range(len(x_best)):
+        model_params[paramstooptimize[j]]=x_best[j]
+    return model_params,y_best,x_history,y_history
+        
+
+
+
 
 
 
