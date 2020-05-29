@@ -226,7 +226,7 @@ def genetic_algorithm(f,population,k_max,k_selection,bounds,selection=tournament
             parents=selection(population,y,k_selection)
             children=[crossover(parents[i][0],parents[i][1]) for i in range(n)]
             population=np.array([mutation(children[i]) for i in range(n)])
-            population=correct_population(population)
+            population=correct_population(population,bounds)
         print("Final evaluation")
         for i in range(n):
             y[i]=f(population[i])
@@ -247,7 +247,7 @@ def genetic_algorithm(f,population,k_max,k_selection,bounds,selection=tournament
             parents=selection(population,y,k_selection)
             children=[crossover(parents[i][0],parents[i][1]) for i in range(n)]
             population=np.array([mutation(children[i]) for i in range(n)])
-            population=correct_population(population)
+            population=correct_population(population,bounds)
         for i in range(n):
             y[i]=f(population[i])
         ind=np.argmax(y)
