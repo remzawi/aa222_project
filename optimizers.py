@@ -277,7 +277,7 @@ def genetic_algorithm(f,population,k_max,k_selection,bounds,selection=tournament
     
 
 
-def GP(n,k_max,k_selection,params=params,num_training=49000,num_val=1000,keras_verbose=2):
+def GA(n,k_max,k_selection,params=params,num_training=49000,num_val=1000,keras_verbose=2):
     paramstooptimize,bounds ,model_params=getParamsToOptimize(params)
     population=createRandomSamplingPlan(n,bounds)
     X_train,y_train,X_val,y_val,X_test,y_test=load_cifar(num_training=num_training,num_val=num_val)
