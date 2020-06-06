@@ -64,7 +64,7 @@ def load_cifar(num_training=49000,num_val=1000,normalize=True): #Load data from 
 
 
 
-def score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=2): #Black box function that scores a model by returning its final validation accuracy
+def train_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=2): #Black box function that scores a model by returning its final validation accuracy
     lr=model_params['learning_rate']
     nepochs=int(model_params['nepochs'])
     batch_size=int(model_params['batch_size'])
@@ -73,10 +73,8 @@ def score_model(model,model_params,X_train,y_train,X_val,y_val,keras_verbose=2):
               metrics=[tf.keras.metrics.sparse_categorical_accuracy])
     np.random.seed(0)
     history=model.fit(X_train,y_train,batch_size=batch_size,epochs=nepochs,validation_data=(X_val,y_val),verbose=keras_verbose)
-    score=history.history['val_sparse_categorical_accuracy'][-1]
-    del model
-    gc.collect()
-    return score
+    clear_session()
+    return history.history['val_sparse_categorical_accuracy']
 
 #Assume CONV-Batchnorm-Relu-CONV-Batchnorm-Relu-CONV-Batchnorm-Relu-POOL-Dropout-FC-Softmax
 def create_model(model_params):
